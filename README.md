@@ -4,9 +4,24 @@ Track R&D time spent in Claude Code sessions for automated tax credit documentat
 
 ## Install
 
+### Claude Code (Terminal / CLI)
+
 ```
 /plugin install github.com/quarryfi/claude-code-plugin
 ```
+
+### Claude Desktop (Mac / Windows)
+
+1. Click the **+** button next to the prompt box
+2. Select **Plugins**
+3. Select **Add plugin**
+4. Search for `quarryfi-tracker` or browse to find it
+5. Click **Install** and choose your scope:
+   - **User** — active across all projects
+   - **Project** — shared with collaborators in this repo
+   - **Local** — just for you in this repo
+
+After installing, run `/reload-plugins` to activate without restarting.
 
 ## First Run
 
