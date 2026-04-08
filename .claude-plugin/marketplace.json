@@ -1,0 +1,32 @@
+{
+  "name": "quarryfi",
+  "metadata": {
+    "description": "QuarryFi R&D time tracking plugins for AI coding tools"
+  },
+  "owner": {
+    "name": "QuarryFi"
+  },
+  "plugins": [
+    {
+      "name": "quarryfi-tracker",
+      "source": "./",
+      "description": "Track R&D time in Claude Code for QuarryFi tax credit documentation",
+      "version": "1.0.0",
+      "homepage": "https://quarryfi.smashedstudiosllc.workers.dev",
+      "repository": "https://github.com/quarryfi/claude-code-plugin",
+      "license": "MIT",
+      "keywords": [
+        "r&d",
+        "tax-credits",
+        "time-tracking",
+        "quarryfi"
+      ],
+      "category": "productivity",
+      "tags": [
+        "productivity",
+        "time-tracking",
+        "r&d"
+      ]
+    }
+  ]
+}
