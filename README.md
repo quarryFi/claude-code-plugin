@@ -4,44 +4,58 @@ Track R&D time spent in Claude Code sessions for automated tax credit documentat
 
 ## Install
 
-### Claude Code (Terminal / CLI)
+### Step 1: Add the marketplace
+
+**Claude Code CLI:**
+```
+/plugin marketplace add https://github.com/quarryFi/claude-code-plugin.git
+```
+
+**Claude Desktop:** Click **+** next to the prompt box > **Plugins** > **Add plugin** > paste the URL above.
+
+### Step 2: Install the plugin
+
+**Claude Code CLI:**
+```
+/plugin install quarryfi-tracker@quarryfi
+```
+
+**Claude Desktop:** Find **Quarryfi tracker** in your plugins list and click **Install**.
+
+### Step 3: Add your API key and projects
+
+Run the configure command in any Claude Code session:
 
 ```
-/plugin install github.com/quarryfi/claude-code-plugin
+/quarryfi-tracker:configure
 ```
 
-### Claude Desktop (Mac / Windows)
+This walks you through:
+1. **Profile name** — label for the company/account (e.g. "Acme Corp")
+2. **API key** — from your [QuarryFi dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard)
+3. **Project directories** — which local directories this key tracks
 
-1. Click the **+** button next to the prompt box
-2. Select **Plugins**
-3. Select **Add plugin**
-4. Search for `quarryfi-tracker` or browse to find it
-5. Click **Install** and choose your scope:
-   - **User** — active across all projects
-   - **Project** — shared with collaborators in this repo
-   - **Local** — just for you in this repo
+Repeat to add more companies. Each profile maps one API key to one or more project directories.
 
-After installing, run `/reload-plugins` to activate without restarting.
-
-## First Run
-
-Run the setup script to configure your profiles:
+**Alternative:** Create `~/.quarryfi/config.json` manually (see [Config format](#config-format) below) or run the interactive setup script:
 
 ```bash
-bash ~/.claude/plugins/cache/quarryfi-tracker/setup.sh
+bash ~/.claude/plugins/cache/quarryfi/quarryfi-tracker/setup.sh
 ```
 
-The setup wizard walks you through:
-1. Enter a profile name (e.g. "Acme Corp")
-2. Enter the API key for that company
-3. Enter project directories to track (comma-separated absolute paths)
-4. Optionally add more profiles
+### Step 4: Start coding
 
-Get your API key from the [QuarryFi dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard).
+Use Claude Code normally. R&D time automatically appears on your [QuarryFi dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard).
 
 ## Multi-Company Setup
 
 Freelancers and consultants working for multiple companies can route heartbeats to different QuarryFi accounts based on which project directory they're working in.
+
+Each profile maps an API key to specific project directories. Add as many profiles as you need:
+
+```
+/quarryfi-tracker:configure add
+```
 
 ### How project-to-key routing works
 
@@ -51,7 +65,16 @@ When a hook fires, the plugin reads your current working directory and checks it
 - If **multiple profiles** match: heartbeat goes to all matching endpoints
 - If **no profile** matches: no heartbeat is sent (explicit opt-in required)
 
-### Config format
+### Managing profiles
+
+```
+/quarryfi-tracker:configure           # show current profiles, add/edit/remove
+/quarryfi-tracker:configure add       # add a new profile
+/quarryfi-tracker:configure remove "Acme Corp"   # remove a profile
+/quarryfi-tracker:configure list      # show all profiles
+```
+
+## Config Format
 
 Config file: `~/.quarryfi/config.json`
 
@@ -92,7 +115,7 @@ The old single-key format still works:
 }
 ```
 
-When detected, it behaves as a single profile with no project filter — all sessions are tracked regardless of directory, matching the original behavior.
+When detected, it behaves as a single profile with no project filter — all sessions are tracked regardless of directory.
 
 ## What It Tracks
 
@@ -115,44 +138,26 @@ Every heartbeat sent is logged locally to `~/.quarryfi/audit.log` as one JSON li
 
 The log auto-truncates when it exceeds 1 MB (oldest half is removed). Logging is fire-and-forget and never blocks the session.
 
-## Usage
+## Commands & Skills
 
-Once installed, the plugin works automatically:
-
-- **Session start**: sends a heartbeat when Claude Code starts
-- **Response stop**: sends a heartbeat when Claude finishes responding
-- **Session end**: sends a final heartbeat when the session terminates
-
-### Check Status
-
-Use the built-in skill to check your tracking status:
-
-```
-/quarryfi-tracker:quarryfi-status
-```
-
-This shows:
-- All configured profiles and their mapped projects
-- Which profile(s) match your current working directory
-- Connection status and today's R&D hours per profile
-- Recent entries from the local audit log
+| Command | Description |
+|---------|-------------|
+| `/quarryfi-tracker:configure` | Add, remove, or list API key profiles and project mappings |
+| `/quarryfi-tracker:quarryfi-status` | Check tracking status and today's R&D hours per profile |
 
 ## Hooks
 
-The plugin registers hooks for these Claude Code events:
-
 | Event          | Behavior                              |
 |----------------|---------------------------------------|
-| `SessionStart` | Records start time, sends heartbeat   |
+| `SessionStart` | Checks config, sends heartbeat        |
 | `Stop`         | Sends heartbeat on response complete  |
 | `SessionEnd`   | Sends final session-end heartbeat     |
 
 ## Troubleshooting
 
-- **Plugin not tracking**: Verify `~/.quarryfi/config.json` exists with valid profiles
-- **Wrong company receiving data**: Check that your project directories are correct absolute paths
+- **"QuarryFi is not configured"** on session start: Run `/quarryfi-tracker:configure` to add your API key
+- **Wrong company receiving data**: Check that your project directories are correct absolute paths in the right profile
 - **No data for a project**: Ensure the project path is listed in a profile's `projects` array
-- **API errors**: Run `bash setup.sh` to re-verify your API keys
 - **Check audit log**: `tail -20 ~/.quarryfi/audit.log` shows recent send attempts and errors
 - **No data on dashboard**: Data may take a moment to appear — check audit.log for `"status":"sent"`
 

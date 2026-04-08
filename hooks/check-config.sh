@@ -4,37 +4,41 @@
 
 CONFIG_FILE="$HOME/.quarryfi/config.json"
 
-# Also check plugin userConfig env var
+# Check plugin userConfig env var
 if [ -n "${CLAUDE_PLUGIN_OPTION_api_key:-}" ]; then
   exit 0
 fi
 
 if [ ! -f "$CONFIG_FILE" ]; then
   cat <<'MSG'
-⚠️ QuarryFi is not configured yet. To start tracking R&D time, run:
+QuarryFi R&D tracking is not configured yet.
 
-  bash "${CLAUDE_PLUGIN_ROOT}/setup.sh"
+To set up, run:  /quarryfi-tracker:configure
 
 Or create ~/.quarryfi/config.json manually:
 
   {
-    "api_key": "qf_your_key_here",
-    "api_url": "https://quarryfi.smashedstudiosllc.workers.dev"
+    "profiles": [
+      {
+        "name": "My Company",
+        "api_key": "qf_your_key_here",
+        "api_url": "https://quarryfi.smashedstudiosllc.workers.dev",
+        "projects": ["/path/to/your/project"]
+      }
+    ]
   }
 
-Get your API key from: https://quarryfi.smashedstudiosllc.workers.dev/dashboard
+Get your API key: https://quarryfi.smashedstudiosllc.workers.dev/dashboard
 MSG
   exit 0
 fi
 
-# Config exists — check it has a key
+# Config exists — check it has credentials
 if grep -q '"api_key"' "$CONFIG_FILE" 2>/dev/null || grep -q '"profiles"' "$CONFIG_FILE" 2>/dev/null; then
   exit 0
 fi
 
 cat <<'MSG'
-⚠️ QuarryFi config exists but has no API key. Run setup to fix:
-
-  bash "${CLAUDE_PLUGIN_ROOT}/setup.sh"
+QuarryFi config exists but has no API key. Run:  /quarryfi-tracker:configure
 MSG
 exit 0
