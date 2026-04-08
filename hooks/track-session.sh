@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # QuarryFi session tracking hook for Claude Code
-# Supports multi-profile configs with project-to-key routing.
-# Falls back to legacy single-key config for backward compatibility.
+#
+# Credential sources (checked in order):
+#   1. Plugin userConfig (CLAUDE_PLUGIN_OPTION_api_key env var, set via plugin UI)
+#   2. Multi-profile config file (~/.quarryfi/config.json with "profiles" array)
+#   3. Legacy single-key config file (~/.quarryfi/config.json with "api_key")
+#
 # Errors are silently ignored to never break the Claude Code session.
 
 set -o pipefail
@@ -10,16 +14,10 @@ CONFIG_DIR="$HOME/.quarryfi"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 AUDIT_LOG="$CONFIG_DIR/audit.log"
 AUDIT_MAX_BYTES=1048576  # 1 MB
+DEFAULT_API_URL="https://quarryfi.smashedstudiosllc.workers.dev"
 
 # --- Read hook event from stdin -------------------------------------------
 EVENT_JSON=$(cat)
-
-# --- Bail if no config ----------------------------------------------------
-if [ ! -f "$CONFIG_FILE" ]; then
-  exit 0
-fi
-
-CONFIG=$(cat "$CONFIG_FILE" 2>/dev/null) || exit 0
 
 # --- Parse event fields ---------------------------------------------------
 HOOK_EVENT=$(printf '%s' "$EVENT_JSON" | grep -o '"hook_event_name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"//;s/"$//' 2>/dev/null)
@@ -36,6 +34,9 @@ case "$HOOK_EVENT" in
   SessionEnd)   EVENT_TYPE="session_end" ;;
   *)            EVENT_TYPE="heartbeat" ;;
 esac
+
+# --- Ensure audit log directory exists ------------------------------------
+mkdir -p "$CONFIG_DIR" 2>/dev/null || true
 
 # --- Audit log helper -----------------------------------------------------
 audit_log() {
@@ -68,7 +69,7 @@ send_heartbeat() {
   if [ -z "$api_key" ]; then
     return
   fi
-  api_url="${api_url:-https://quarryfi.smashedstudiosllc.workers.dev}"
+  api_url="${api_url:-$DEFAULT_API_URL}"
 
   local payload
   payload=$(cat <<PAYLOAD
@@ -103,20 +104,28 @@ PAYLOAD
   fi
 }
 
-# --- Detect config format and route ---------------------------------------
+# ==========================================================================
+# Source 1: Plugin userConfig (env vars from the Claude Code plugin UI)
+# ==========================================================================
+if [ -n "${CLAUDE_PLUGIN_OPTION_api_key:-}" ]; then
+  PLUGIN_API_URL="${CLAUDE_PLUGIN_OPTION_api_url:-$DEFAULT_API_URL}"
+  send_heartbeat "$CLAUDE_PLUGIN_OPTION_api_key" "$PLUGIN_API_URL" "plugin-config"
+  exit 0
+fi
 
-# Check if this is a multi-profile config (has "profiles" key)
+# ==========================================================================
+# Source 2 & 3: Config file (~/.quarryfi/config.json)
+# ==========================================================================
+if [ ! -f "$CONFIG_FILE" ]; then
+  exit 0
+fi
+
+CONFIG=$(cat "$CONFIG_FILE" 2>/dev/null) || exit 0
+
+# --- Source 2: Multi-profile config ---------------------------------------
 if printf '%s' "$CONFIG" | grep -q '"profiles"'; then
-  # ---- Multi-profile mode ------------------------------------------------
-  # Extract profile blocks using awk. Each profile needs: name, api_key, api_url, projects[].
-  # We use a simple line-by-line state machine since we can't rely on jq.
 
-  SENT_ANY=false
-
-  # Parse profiles as delimited blocks between { and } inside the profiles array.
-  # Strategy: extract each profile object, check if CWD matches any project prefix.
   profile_count=$(printf '%s' "$CONFIG" | grep -c '"name"' 2>/dev/null || echo 0)
-
   if [ "$profile_count" -eq 0 ]; then
     exit 0
   fi
@@ -152,7 +161,6 @@ if printf '%s' "$CONFIG" | grep -q '"profiles"'; then
     END { printf "PROFILE_COUNT=%d\n", idx }
   ' 2>/dev/null)"
 
-  # Iterate over parsed profiles
   i=0
   while [ "$i" -lt "${PROFILE_COUNT:-0}" ]; do
     eval "p_name=\${PROFILE_${i}_NAME:-}"
@@ -165,7 +173,6 @@ if printf '%s' "$CONFIG" | grep -q '"profiles"'; then
       continue
     fi
 
-    # Check if CWD matches any project prefix in this profile
     matched=false
     if [ -n "$p_projects" ]; then
       IFS='|' read -ra proj_list <<< "$p_projects"
@@ -177,18 +184,16 @@ if printf '%s' "$CONFIG" | grep -q '"profiles"'; then
         fi
       done
     fi
-    # No projects listed and no match — skip (explicit opt-in required)
 
     if [ "$matched" = true ]; then
       send_heartbeat "$p_key" "$p_url" "$p_name"
-      SENT_ANY=true
     fi
 
     i=$((i + 1))
   done
 
 else
-  # ---- Legacy single-key mode (backward compatibility) -------------------
+  # --- Source 3: Legacy single-key config -----------------------------------
   API_KEY=$(printf '%s' "$CONFIG" | grep -o '"api_key"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*: *"//;s/"$//' 2>/dev/null) || exit 0
   API_URL=$(printf '%s' "$CONFIG" | grep -o '"api_url"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*: *"//;s/"$//' 2>/dev/null) || true
 
@@ -196,7 +201,6 @@ else
     exit 0
   fi
 
-  # Legacy mode: no project filter, send everything (matches original behavior)
   send_heartbeat "$API_KEY" "$API_URL" "default"
 fi
 
