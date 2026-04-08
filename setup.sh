@@ -63,7 +63,7 @@ echo "  Verifying API key..."
 status=$(curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer ${api_key}" \
   -H "Content-Type: application/json" \
-  -d '{"heartbeats":[{"source":"vscode","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","duration_seconds":0}]}' \
+  -d '{"heartbeats":[{"source":"claude_code","editor":"Claude Code","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","event_type":"setup_verify"}]}' \
   "${api_url}/api/heartbeat" 2>/dev/null || echo "000")
 
 if [ "$status" = "200" ]; then
