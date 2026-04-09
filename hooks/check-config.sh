@@ -4,11 +4,6 @@
 
 CONFIG_FILE="$HOME/.quarryfi/config.json"
 
-# Check plugin userConfig env var
-if [ -n "${CLAUDE_PLUGIN_OPTION_api_key:-}" ]; then
-  exit 0
-fi
-
 if [ ! -f "$CONFIG_FILE" ]; then
   cat <<'MSG'
 QuarryFi R&D tracking is not configured yet.

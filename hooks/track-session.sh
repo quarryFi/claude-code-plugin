@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 # QuarryFi session tracking hook for Claude Code
 #
-# Credential sources (checked in order):
-#   1. Plugin userConfig (CLAUDE_PLUGIN_OPTION_api_key env var, set via plugin UI)
-#   2. Multi-profile config file (~/.quarryfi/config.json with "profiles" array)
-#   3. Legacy single-key config file (~/.quarryfi/config.json with "api_key")
-#
+# Reads ~/.quarryfi/config.json for credentials.
+# Supports multi-profile (profiles array) and legacy single-key formats.
 # Errors are silently ignored to never break the Claude Code session.
 
 set -o pipefail
@@ -105,16 +102,7 @@ PAYLOAD
 }
 
 # ==========================================================================
-# Source 1: Plugin userConfig (env vars from the Claude Code plugin UI)
-# ==========================================================================
-if [ -n "${CLAUDE_PLUGIN_OPTION_api_key:-}" ]; then
-  PLUGIN_API_URL="${CLAUDE_PLUGIN_OPTION_api_url:-$DEFAULT_API_URL}"
-  send_heartbeat "$CLAUDE_PLUGIN_OPTION_api_key" "$PLUGIN_API_URL" "plugin-config"
-  exit 0
-fi
-
-# ==========================================================================
-# Source 2 & 3: Config file (~/.quarryfi/config.json)
+# Config file (~/.quarryfi/config.json)
 # ==========================================================================
 if [ ! -f "$CONFIG_FILE" ]; then
   exit 0
