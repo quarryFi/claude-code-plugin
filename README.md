@@ -143,7 +143,7 @@ The log auto-truncates when it exceeds 1 MB (oldest half is removed). Logging is
 | Command | Description |
 |---------|-------------|
 | `/quarryfi-tracker:configure` | Add, remove, or list API key profiles and project mappings |
-| `/quarryfi-tracker:quarryfi-status` | Check tracking status and today's R&D hours per profile |
+| `/quarryfi-tracker:quarryfi-status` | Show configured profiles and recent heartbeat activity from local audit log |
 
 ## Hooks
 
@@ -163,4 +163,4 @@ The log auto-truncates when it exceeds 1 MB (oldest half is removed). Logging is
 
 ## License
 
-MIT
+Apache-2.0
