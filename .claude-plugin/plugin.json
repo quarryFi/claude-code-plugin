@@ -1,7 +1,7 @@
 {
   "name": "quarryfi-tracker",
   "description": "Track R&D time in Claude Code for QuarryFi tax credit documentation",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": {
     "name": "QuarryFi"
   },
