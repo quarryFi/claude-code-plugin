@@ -239,6 +239,38 @@ CONFIG=$(cat "$CONFIG_FILE" 2>/dev/null) || exit 0
 
 # --- Multi-profile config -------------------------------------------------
 if printf '%s' "$CONFIG" | grep -q '"profiles"'; then
+  if command -v node >/dev/null 2>&1; then
+    matched_profiles=$(node - "$CONFIG_FILE" "$CWD" <<'NODE' 2>/dev/null
+const fs = require("fs");
+const [file, cwd] = process.argv.slice(2);
+const cfg = JSON.parse(fs.readFileSync(file, "utf8"));
+const profiles = Array.isArray(cfg.profiles) ? cfg.profiles : [cfg];
+const normalizedCwd = String(cwd || "");
+
+function matchesProject(project) {
+  const prefix = String(project || "").replace(/\/+$/, "");
+  return !prefix || normalizedCwd === prefix || normalizedCwd.startsWith(`${prefix}/`);
+}
+
+for (const profile of profiles) {
+  if (!profile || !profile.api_key) continue;
+  const projects = Array.isArray(profile.projects) ? profile.projects.filter(Boolean) : [];
+  if (projects.length > 0 && !projects.some(matchesProject)) continue;
+  console.log([
+    profile.name || "unnamed",
+    profile.api_key,
+    profile.api_url || "https://quarryfi.smashedstudiosllc.workers.dev",
+  ].join("\t"));
+}
+NODE
+)
+
+    while IFS=$'\t' read -r p_name p_key p_url; do
+      [ -z "$p_key" ] && continue
+      send_heartbeat "$p_key" "$p_url" "$p_name"
+    done <<< "$matched_profiles"
+    exit 0
+  fi
 
   profile_count=$(printf '%s' "$CONFIG" | grep -c '"name"' 2>/dev/null || echo 0)
   if [ "$profile_count" -eq 0 ]; then
