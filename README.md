@@ -47,6 +47,35 @@ bash ~/.claude/plugins/cache/quarryfi/quarryfi-tracker/setup.sh
 
 Use Claude Code normally. R&D time automatically appears on your [QuarryFi dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard).
 
+## Updating
+
+The Claude plugin does not auto-update just because a new commit was pushed to GitHub. Your installed marketplace clone has to refresh first.
+
+### From inside Claude
+
+Run:
+
+```
+/quarryfi-tracker:update
+```
+
+That command:
+- refreshes the local marketplace clone
+- compares installed and latest versions
+- runs the plugin update if needed
+
+Start a new Claude session after updating so the latest hooks and skills load cleanly.
+
+### From the terminal
+
+```bash
+git -C ~/.claude/plugins/marketplaces/quarryfi fetch origin
+git -C ~/.claude/plugins/marketplaces/quarryfi reset --hard origin/main
+claude plugin update quarryfi-tracker@quarryfi
+```
+
+If Claude already shows the latest version number, you may only need to start a new session.
+
 ## Multi-Company Setup
 
 Freelancers and consultants working for multiple companies can route heartbeats to different QuarryFi accounts based on which project directory they're working in.
@@ -126,7 +155,7 @@ When detected, it behaves as a single profile with no project filter — all ses
 
 ## Privacy
 
-No code content, conversation transcripts, or file contents are ever sent. Only session metadata (timestamps, project name, session ID) is transmitted to your QuarryFi account.
+No code content, conversation transcripts, or file contents are ever sent. Only session metadata (timestamps, project name, session ID, branch, language/file-type metadata when available) is transmitted to your QuarryFi account.
 
 ## Local Audit Log
 
@@ -143,7 +172,8 @@ The log auto-truncates when it exceeds 1 MB (oldest half is removed). Logging is
 | Command | Description |
 |---------|-------------|
 | `/quarryfi-tracker:configure` | Add, remove, or list API key profiles and project mappings |
-| `/quarryfi-tracker:quarryfi-status` | Show configured profiles and recent heartbeat activity from local audit log |
+| `/quarryfi-tracker:quarryfi-status` | Show configured profiles, recent heartbeat activity, and seat-scoped server status |
+| `/quarryfi-tracker:update` | Refresh the marketplace clone and update the installed plugin |
 
 ## Hooks
 
