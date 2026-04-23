@@ -18,12 +18,18 @@ AUDIT_MAX_BYTES=1048576  # 1 MB
 DEFAULT_API_URL="https://quarryfi.smashedstudiosllc.workers.dev"
 
 # --- Read hook event from stdin -------------------------------------------
-EVENT_JSON=$(cat)
+EVENT_JSON=$(cat 2>/dev/null || true)
 
 # --- Parse common event fields --------------------------------------------
 HOOK_EVENT=$(printf '%s' "$EVENT_JSON" | grep -o '"hook_event_name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"//;s/"$//' 2>/dev/null)
 CWD=$(printf '%s' "$EVENT_JSON" | grep -o '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"//;s/"$//' 2>/dev/null)
 SESSION_ID=$(printf '%s' "$EVENT_JSON" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"//;s/"$//' 2>/dev/null)
+if [ -z "$CWD" ]; then
+  CWD=$(pwd 2>/dev/null || echo "")
+fi
+if [ -z "$SESSION_ID" ]; then
+  SESSION_ID="claude-$(date +%s)-${RANDOM:-0}"
+fi
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 EPOCH=$(date +%s 2>/dev/null || echo 0)
@@ -269,6 +275,9 @@ NODE
       [ -z "$p_key" ] && continue
       send_heartbeat "$p_key" "$p_url" "$p_name"
     done <<< "$matched_profiles"
+    if [ -z "$matched_profiles" ]; then
+      audit_log "system" "skipped:no_matching_profile"
+    fi
     exit 0
   fi
 
@@ -308,6 +317,7 @@ NODE
   ' 2>/dev/null)"
 
   i=0
+  sent=0
   while [ "$i" -lt "${PROFILE_COUNT:-0}" ]; do
     eval "p_name=\${PROFILE_${i}_NAME:-}"
     eval "p_key=\${PROFILE_${i}_KEY:-}"
@@ -333,10 +343,15 @@ NODE
 
     if [ "$matched" = true ]; then
       send_heartbeat "$p_key" "$p_url" "$p_name"
+      sent=1
     fi
 
     i=$((i + 1))
   done
+
+  if [ "$sent" -eq 0 ]; then
+    audit_log "system" "skipped:no_matching_profile"
+  fi
 
 else
   # --- Legacy single-key config -------------------------------------------
