@@ -61,7 +61,7 @@ Run:
 
 That command:
 - refreshes the local marketplace clone
-- compares installed and latest versions
+- compares the marketplace clone and the active cached install by version and revision
 - runs the plugin update if needed
 
 Start a new Claude session after updating so the latest hooks and skills load cleanly.
@@ -152,10 +152,11 @@ When detected, it behaves as a single profile with no project filter — all ses
 - **Project directory** — which project you're working in (basename only)
 - **Session duration** — calculated from start/stop heartbeats
 - **Session ID** — correlates events within a single session
+- **Runtime diagnostics** — plugin version, install revision, and hook mode so QuarryFi can tell "silent", "contacted but rejected", and "healthy" apart
 
 ## Privacy
 
-No code content, conversation transcripts, or file contents are ever sent. Only session metadata (timestamps, project name, session ID, branch, language/file-type metadata when available) is transmitted to your QuarryFi account.
+No code content, conversation transcripts, or file contents are ever sent. Only session metadata (timestamps, project name, session ID, branch, language/file-type metadata when available) plus minimal runtime diagnostics (plugin version, runtime channel, hook mode, install revision) are transmitted to your QuarryFi account.
 
 ## Local Audit Log
 
@@ -172,16 +173,18 @@ The log auto-truncates when it exceeds 1 MB (oldest half is removed). Logging is
 | Command | Description |
 |---------|-------------|
 | `/quarryfi-tracker:configure` | Add, remove, or list API key profiles and project mappings |
-| `/quarryfi-tracker:quarryfi-status` | Show configured profiles, recent heartbeat activity, and seat-scoped server status |
+| `/quarryfi-tracker:quarryfi-status` | Show configured profiles, marketplace vs cached install version/commit, recent heartbeat activity, and seat-scoped server status |
 | `/quarryfi-tracker:update` | Refresh the marketplace clone and update the installed plugin |
 
 ## Hooks
 
 | Event          | Behavior                              |
 |----------------|---------------------------------------|
-| `SessionStart` | Checks config, sends heartbeat        |
-| `Stop`         | Sends heartbeat on response complete  |
-| `SessionEnd`   | Sends final session-end heartbeat     |
+| `SessionStart` | Checks config, sends session-start heartbeat, starts the 60-second timer |
+| `PostToolUse` / `UserPromptSubmit` / `SubagentStop` | Flushes recent activity immediately |
+| `Stop` / `SessionEnd` | Sends final heartbeat and clears timer state |
+
+Direct plugin tracking starts when the installed hook is active. Older GitHub-only work still appears in QuarryFi through GitHub sync, but precise plugin freshness is forward-looking from install/runtime health.
 
 ## Troubleshooting
 
@@ -189,7 +192,7 @@ The log auto-truncates when it exceeds 1 MB (oldest half is removed). Logging is
 - **Wrong company receiving data**: Check that your project directories are correct absolute paths in the right profile
 - **No data for a project**: Ensure the project path is listed in a profile's `projects` array
 - **Check audit log**: `tail -20 ~/.quarryfi/audit.log` shows recent send attempts and errors
-- **No data on dashboard**: Data may take a moment to appear — check audit.log for `"status":"sent"`
+- **No data on dashboard**: check `~/.quarryfi/audit.log` first, then run `/quarryfi-tracker:quarryfi-status` to compare the marketplace version, the active cached install version, and the last local audit event
 
 ## License
 

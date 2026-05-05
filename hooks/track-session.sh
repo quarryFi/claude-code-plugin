@@ -21,6 +21,11 @@ CLI_MODE="${1:-}"
 CLI_CWD="${2:-}"
 CLI_SESSION_ID="${3:-}"
 EVENT_JSON=$(cat 2>/dev/null || true)
+SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$SCRIPT_PATH")" 2>/dev/null && pwd)
+PLUGIN_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." 2>/dev/null && pwd)
+PLUGIN_MANIFEST="$PLUGIN_ROOT/.claude-plugin/plugin.json"
+HOOK_MODE="event_plus_timer"
 
 json_string() {
   printf '%s' "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/.*:[[:space:]]*"\(.*\)"/\1/'
@@ -30,6 +35,34 @@ HOOK_EVENT=$(json_string "$EVENT_JSON" "hook_event_name")
 EVENT_CWD_FROM_JSON=$(json_string "$EVENT_JSON" "cwd")
 EVENT_SESSION_ID_FROM_JSON=$(json_string "$EVENT_JSON" "session_id")
 EVENT_FILE_PATH_FROM_JSON=$(json_string "$EVENT_JSON" "file_path")
+
+get_plugin_version() {
+  if [ -f "$PLUGIN_MANIFEST" ]; then
+    grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$PLUGIN_MANIFEST" 2>/dev/null | head -1 | sed 's/.*:[[:space:]]*"\(.*\)"/\1/'
+    return
+  fi
+  echo "unknown"
+}
+
+get_runtime_channel() {
+  case "$PLUGIN_ROOT" in
+    *"/.claude/plugins/cache/"*) echo "claude_plugin_cache" ;;
+    *"/.claude/plugins/marketplaces/"*) echo "claude_plugin_marketplace" ;;
+    *) echo "claude_plugin_custom" ;;
+  esac
+}
+
+get_install_revision() {
+  if [ -f "$SCRIPT_PATH" ]; then
+    shasum -a 256 "$SCRIPT_PATH" 2>/dev/null | cut -c1-12
+    return
+  fi
+  if [ -f "$PLUGIN_MANIFEST" ]; then
+    shasum -a 256 "$PLUGIN_MANIFEST" 2>/dev/null | cut -c1-12
+    return
+  fi
+  echo "unknown"
+}
 
 get_cwd() {
   if [ -n "$CLI_CWD" ]; then
@@ -285,9 +318,19 @@ build_payload() {
   local language="$6"
   local file_type="$7"
   local branch="$8"
+  local plugin_version="$9"
+  local runtime_channel="${10}"
+  local install_revision="${11}"
 
   cat <<EOF
 {
+  "client": {
+    "plugin_version": "${plugin_version}",
+    "runtime_channel": "${runtime_channel}",
+    "hook_mode": "${HOOK_MODE}",
+    "install_revision": "${install_revision}",
+    "host_app": "claude_code"
+  },
   "heartbeats": [
     {
       "source": "claude_code",
@@ -345,12 +388,17 @@ dispatch_to_profiles() {
   [ ! -f "$CONFIG_FILE" ] && return
 
   local timestamp project_name branch file_path language file_type payload
+  local plugin_version runtime_channel install_revision
   timestamp=$(timestamp_utc)
   project_name=$(get_project_name "$cwd")
   branch=$(get_branch "$cwd")
   file_path=$(get_file_path)
   IFS=$'\t' read -r language file_type <<< "$(get_language_and_file_type "$file_path")"
-  payload=$(build_payload "$event_type" "$duration_seconds" "$timestamp" "$session_id" "$project_name" "$language" "$file_type" "$branch")
+  plugin_version=$(get_plugin_version)
+  runtime_channel=$(get_runtime_channel)
+  install_revision=$(get_install_revision)
+  audit_log "system" "hook_fired" "$project_name" "$event_type" "$branch" "$language" "$duration_seconds"
+  payload=$(build_payload "$event_type" "$duration_seconds" "$timestamp" "$session_id" "$project_name" "$language" "$file_type" "$branch" "$plugin_version" "$runtime_channel" "$install_revision")
 
   local config
   config=$(cat "$CONFIG_FILE" 2>/dev/null) || return

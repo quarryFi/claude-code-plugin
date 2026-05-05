@@ -4,33 +4,40 @@ description: Force update the QuarryFi plugin to the latest version from GitHub
 
 # QuarryFi Update
 
-Force-pull the latest plugin version from the marketplace and update the installed plugin.
+Force-refresh the latest plugin version from the marketplace and make sure the cached install Claude actually executes matches it.
 
 ## Instructions
 
 Run these commands in order using the Bash tool:
 
-1. Update the marketplace clone:
+1. Update the marketplace clone and capture its version + commit:
 ```bash
 git -C ~/.claude/plugins/marketplaces/quarryfi fetch origin && git -C ~/.claude/plugins/marketplaces/quarryfi reset --hard origin/main
+MARKETPLACE_VERSION=$(grep '"version"' ~/.claude/plugins/marketplaces/quarryfi/.claude-plugin/plugin.json | head -1)
+MARKETPLACE_COMMIT=$(git -C ~/.claude/plugins/marketplaces/quarryfi rev-parse HEAD)
 ```
 
-2. Get the new version number:
+2. Read the active cached install details from Claude's installed plugins file:
 ```bash
-grep '"version"' ~/.claude/plugins/marketplaces/quarryfi/.claude-plugin/plugin.json
+node -e 'const fs=require("fs");const file=process.env.HOME+"/.claude/plugins/installed_plugins.json";const data=JSON.parse(fs.readFileSync(file,"utf8"));const plugin=data.plugins.find((p)=>p.id==="quarryfi-tracker@quarryfi");if(!plugin){process.exit(1)}console.log(JSON.stringify({version:plugin.version,commit:plugin.gitCommitSha,path:plugin.installPath},null,2));'
 ```
 
-3. Get the currently installed version:
+3. Compare the cached install's version file too:
 ```bash
 find ~/.claude/plugins/cache/quarryfi -name "plugin.json" -path "*/.claude-plugin/*" -exec grep '"version"' {} \; 2>/dev/null | head -1
 ```
 
-4. If the versions differ, run the plugin update:
+4. If the cached install version OR commit differs from the marketplace clone, run the plugin update:
 ```bash
 claude plugin update quarryfi-tracker@quarryfi
 ```
 
 5. Report the result to the user:
-   - If updated: "Updated QuarryFi plugin from vX.Y.Z to vA.B.C. Start a new session to use the new version."
-   - If already current: "QuarryFi plugin is already at the latest version (vX.Y.Z)."
+   - If updated: "Updated QuarryFi plugin to vX.Y.Z and refreshed the active cached install. Start a new Claude session to load the new hooks."
+   - If already current: "QuarryFi plugin is already current in both the marketplace clone and Claude's active cached install (vX.Y.Z)."
    - If update failed: show the error and suggest uninstalling/reinstalling.
+
+6. Remind the user to verify with `/quarryfi-tracker:quarryfi-status`, which should now show:
+   - marketplace version/commit
+   - cached install version/commit
+   - last local audit event timestamp
