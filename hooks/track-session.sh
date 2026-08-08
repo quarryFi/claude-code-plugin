@@ -13,7 +13,7 @@ CONFIG_DIR="$HOME/.quarryfi"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 AUDIT_LOG="$CONFIG_DIR/audit.log"
 AUDIT_MAX_BYTES=1048576
-DEFAULT_API_URL="https://quarryfi.smashedstudiosllc.workers.dev"
+DEFAULT_API_URL="https://quarryfi.com"
 HEARTBEAT_INTERVAL_SECONDS=60
 MIN_TICK_DURATION_SECONDS=45
 
@@ -425,7 +425,7 @@ for (const profile of profiles) {
   console.log([
     profile.name || "unnamed",
     profile.api_key,
-    profile.api_url || "https://quarryfi.smashedstudiosllc.workers.dev",
+    profile.api_url || "https://quarryfi.com",
   ].join("\t"));
 }
 NODE

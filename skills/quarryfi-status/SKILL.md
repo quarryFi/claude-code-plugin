@@ -65,6 +65,6 @@ Show the user what QuarryFi is tracking, whether the installed Claude plugin mat
    - Whether the marketplace clone and active cached install match
    - The timestamp of the last local audit event
 
-10. Tell the user: "For detailed deduped R&D hours and qualification review, visit your QuarryFi dashboard: https://quarryfi.smashedstudiosllc.workers.dev/dashboard"
+10. Tell the user: "For detailed deduped R&D hours and qualification review, visit your QuarryFi dashboard: https://quarryfi.com/dashboard"
 
 11. If the audit log doesn't exist or is empty, tell the user that no heartbeats have been sent yet — tracking starts on the next Claude Code session start.

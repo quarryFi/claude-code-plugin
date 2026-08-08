@@ -1,12 +1,12 @@
 {
   "name": "quarryfi-tracker",
   "description": "Track R&D time in Claude Code for QuarryFi tax credit documentation",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "author": {
     "name": "QuarryFi"
   },
   "repository": "https://github.com/quarryfi/claude-code-plugin",
-  "homepage": "https://quarryfi.smashedstudiosllc.workers.dev",
+  "homepage": "https://quarryfi.com",
   "license": "Apache-2.0",
   "keywords": ["r&d", "tax-credits", "time-tracking", "quarryfi"]
 }

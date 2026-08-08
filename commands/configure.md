@@ -7,7 +7,7 @@ description: Configure QuarryFi API keys and project mappings for R&D time track
 Configure API keys and map them to project directories. Each key belongs to a profile (a company or account), and each profile tracks specific project directories.
 
 Config file location: `~/.quarryfi/config.json`
-Dashboard for API keys: https://quarryfi.smashedstudiosllc.workers.dev/dashboard
+Dashboard for API keys: https://quarryfi.com/dashboard/team
 
 ## Step 1: Read existing config
 
@@ -20,7 +20,7 @@ Read `~/.quarryfi/config.json` if it exists. It may be in one of two formats:
     {
       "name": "Acme Corp",
       "api_key": "qf_...",
-      "api_url": "https://quarryfi.smashedstudiosllc.workers.dev",
+      "api_url": "https://quarryfi.com",
       "projects": ["/Users/me/work/acme-api", "/Users/me/work/acme-frontend"]
     }
   ]
@@ -31,7 +31,7 @@ Read `~/.quarryfi/config.json` if it exists. It may be in one of two formats:
 ```json
 {
   "api_key": "qf_...",
-  "api_url": "https://quarryfi.smashedstudiosllc.workers.dev"
+  "api_url": "https://quarryfi.com"
 }
 ```
 
@@ -67,10 +67,10 @@ Parse the arguments to determine what the user wants:
 Ask the user for these three things (use AskUserQuestion or conversation):
 
 1. **Profile name** — A label for this company/account (e.g. "Acme Corp", "Personal R&D")
-2. **API key** — Their QuarryFi API key (starts with `qf_`). Get it from: https://quarryfi.smashedstudiosllc.workers.dev/dashboard
+2. **API key** — Their QuarryFi API key (starts with `qf_`). Get it from: https://quarryfi.com/dashboard/team
 3. **Project directories** — Absolute paths to the directories this key should track. The hook uses prefix matching, so `/Users/me/work/acme-api` covers all subdirectories.
 
-API URL defaults to `https://quarryfi.smashedstudiosllc.workers.dev` — only ask if the user mentions a custom endpoint.
+API URL defaults to `https://quarryfi.com` — only ask if the user mentions a custom endpoint.
 
 ## Step 5: Verify the key
 
@@ -81,7 +81,7 @@ curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer THE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"heartbeats":[{"source":"claude_code","editor":"Claude Code","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","event_type":"setup_verify"}]}' \
-  "https://quarryfi.smashedstudiosllc.workers.dev/api/heartbeat"
+  "https://quarryfi.com/api/heartbeat"
 ```
 
 Report result: 200 = valid, 401 = rejected (still save if user wants), other = unreachable.
@@ -99,7 +99,7 @@ cat > ~/.quarryfi/config.json << 'EOF'
     {
       "name": "NEW_PROFILE_NAME",
       "api_key": "qf_...",
-      "api_url": "https://quarryfi.smashedstudiosllc.workers.dev",
+      "api_url": "https://quarryfi.com",
       "projects": ["/path/to/project1", "/path/to/project2"]
     }
   ]

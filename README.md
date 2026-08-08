@@ -32,7 +32,7 @@ Run the configure command in any Claude Code session:
 
 This walks you through:
 1. **Profile name** — label for the company/account (e.g. "Acme Corp")
-2. **API key** — from your [QuarryFi dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard)
+2. **API key** — from your [QuarryFi Team dashboard](https://quarryfi.com/dashboard/team)
 3. **Project directories** — which local directories this key tracks
 
 Repeat to add more companies. Each profile maps one API key to one or more project directories.
@@ -45,7 +45,7 @@ bash ~/.claude/plugins/cache/quarryfi/quarryfi-tracker/setup.sh
 
 ### Step 4: Start coding
 
-Use Claude Code normally. R&D time automatically appears on your [QuarryFi dashboard](https://quarryfi.smashedstudiosllc.workers.dev/dashboard).
+Use Claude Code normally. R&D time automatically appears on your [QuarryFi dashboard](https://quarryfi.com/dashboard).
 
 ## Updating
 
@@ -113,13 +113,13 @@ Config file: `~/.quarryfi/config.json`
     {
       "name": "Acme Corp",
       "api_key": "qf_abc123...",
-      "api_url": "https://quarryfi.smashedstudiosllc.workers.dev",
+      "api_url": "https://quarryfi.com",
       "projects": ["/Users/me/work/acme-api", "/Users/me/work/acme-frontend"]
     },
     {
       "name": "Personal R&D",
       "api_key": "qf_def456...",
-      "api_url": "https://quarryfi.smashedstudiosllc.workers.dev",
+      "api_url": "https://quarryfi.com",
       "projects": ["/Users/me/projects/ml-experiment"]
     }
   ]
@@ -130,7 +130,7 @@ Config file: `~/.quarryfi/config.json`
 |------------|------------------------------------------------|
 | `name`     | Display name for the profile                   |
 | `api_key`  | QuarryFi API key (`qf_...`) for this company   |
-| `api_url`  | API endpoint (defaults to workers.dev URL)      |
+| `api_url`  | API endpoint (defaults to `https://quarryfi.com`) |
 | `projects` | Array of absolute directory paths to track      |
 
 ### Backward compatibility
@@ -140,7 +140,7 @@ The old single-key format still works:
 ```json
 {
   "api_key": "qf_...",
-  "api_url": "https://quarryfi.smashedstudiosllc.workers.dev"
+  "api_url": "https://quarryfi.com"
 }
 ```
 

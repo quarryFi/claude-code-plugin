@@ -17,13 +17,13 @@ Or create ~/.quarryfi/config.json manually:
       {
         "name": "My Company",
         "api_key": "qf_your_key_here",
-        "api_url": "https://quarryfi.smashedstudiosllc.workers.dev",
+        "api_url": "https://quarryfi.com",
         "projects": ["/path/to/your/project"]
       }
     ]
   }
 
-Get your API key: https://quarryfi.smashedstudiosllc.workers.dev/dashboard
+Get your API key: https://quarryfi.com/dashboard/team
 MSG
   exit 0
 fi
