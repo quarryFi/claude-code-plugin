@@ -154,6 +154,7 @@ When detected, it behaves as a single profile with no project filter — all ses
 - **Evidence reconciliation metadata** — current Git commit SHA, a one-way hash of the GitHub `owner/repository` name, a changed-file count, and a coarse activity category
 - **Session ID** — correlates events within a single session
 - **Runtime diagnostics** — plugin version, install revision, and hook mode so QuarryFi can tell "silent", "contacted but rejected", and "healthy" apart
+- **Update cues** — QuarryFi can return a non-blocking version notice after a successful heartbeat; the hook shows it once per release and automatically removes local notice markers after 30 days
 
 ## Privacy
 

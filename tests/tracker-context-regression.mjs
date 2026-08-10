@@ -62,7 +62,7 @@ printf '204'
   assert.match(heartbeat.repo_fingerprint, /^[a-f0-9]{64}$/);
   assert.equal(heartbeat.activity_kind, "test");
   assert.equal(heartbeat.changed_file_count, 0, "untracked files are deliberately excluded from the count");
-  assert.equal(payload.client.plugin_version, "1.6.0");
+  assert.equal(payload.client.plugin_version, "1.6.1");
   for (const forbidden of ["source_code", "diff", "prompt", "command", "file_path", "remote_url"]) {
     assert.equal(forbidden in heartbeat, false, `heartbeat must not include ${forbidden}`);
   }

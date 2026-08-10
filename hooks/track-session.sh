@@ -396,6 +396,27 @@ build_payload() {
 EOF
 }
 
+maybe_emit_update_notice() {
+  local response_file="$1"
+  local source="$2"
+  [ ! -s "$response_file" ] && return
+  grep -Eq '"updateAvailable"[[:space:]]*:[[:space:]]*true' "$response_file" 2>/dev/null || return
+
+  local latest_version update_url safe_version notice_dir notice_file
+  latest_version=$(grep -o '"latestVersion"[[:space:]]*:[[:space:]]*"[^"]*"' "$response_file" 2>/dev/null | head -1 | sed 's/.*:[[:space:]]*"\([^"]*\)"/\1/')
+  update_url=$(grep -o '"updateUrl"[[:space:]]*:[[:space:]]*"[^"]*"' "$response_file" 2>/dev/null | head -1 | sed 's/.*:[[:space:]]*"\([^"]*\)"/\1/')
+  safe_version=$(printf '%s' "$latest_version" | tr -cd '0-9A-Za-z._-')
+  [ -z "$safe_version" ] && return
+
+  notice_dir="$CONFIG_DIR/update-notices"
+  notice_file="$notice_dir/${source}-${safe_version}"
+  mkdir -p "$notice_dir" 2>/dev/null || return
+  find "$notice_dir" -type f -mtime +30 -delete 2>/dev/null || true
+  [ -f "$notice_file" ] && return
+  : > "$notice_file"
+  printf '[QuarryFi] Tracker update v%s available: %s\n' "$latest_version" "$update_url" >&2
+}
+
 send_heartbeat_to_profile() {
   local api_key="$1"
   local api_url="$2"
@@ -410,8 +431,10 @@ send_heartbeat_to_profile() {
   [ -z "$api_key" ] && return
   api_url="${api_url:-$DEFAULT_API_URL}"
 
-  local http_code
-  http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+  local http_code response_file
+  response_file=$(mktemp "${TMPDIR:-/tmp}/quarryfi-heartbeat.XXXXXX" 2>/dev/null || true)
+  [ -z "$response_file" ] && response_file="/dev/null"
+  http_code=$(curl -s -o "$response_file" -w "%{http_code}" \
     --max-time 5 \
     -X POST \
     -H "Authorization: Bearer ${api_key}" \
@@ -420,10 +443,12 @@ send_heartbeat_to_profile() {
     "${api_url}/api/heartbeat" 2>/dev/null || echo "000")
 
   if [ "$http_code" = "200" ] || [ "$http_code" = "201" ] || [ "$http_code" = "204" ]; then
+    maybe_emit_update_notice "$response_file" "claude_code"
     audit_log "$profile_name" "sent" "$project_name" "$event_type" "$branch" "$language" "$duration_seconds"
   else
     audit_log "$profile_name" "error:${http_code}" "$project_name" "$event_type" "$branch" "$language" "$duration_seconds"
   fi
+  [ "$response_file" != "/dev/null" ] && rm -f "$response_file"
 }
 
 dispatch_to_profiles() {
