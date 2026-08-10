@@ -151,12 +151,13 @@ When detected, it behaves as a single profile with no project filter — all ses
 - **Session start/stop times** — when you begin and end Claude Code sessions
 - **Project directory** — which project you're working in (basename only)
 - **Session duration** — calculated from start/stop heartbeats
+- **Evidence reconciliation metadata** — current Git commit SHA, a one-way hash of the GitHub `owner/repository` name, a changed-file count, and a coarse activity category
 - **Session ID** — correlates events within a single session
 - **Runtime diagnostics** — plugin version, install revision, and hook mode so QuarryFi can tell "silent", "contacted but rejected", and "healthy" apart
 
 ## Privacy
 
-No code content, conversation transcripts, or file contents are ever sent. Only session metadata (timestamps, project name, session ID, branch, language/file-type metadata when available) plus minimal runtime diagnostics (plugin version, runtime channel, hook mode, install revision) are transmitted to your QuarryFi account.
+No code content, conversation transcripts, prompts, commands, command output, diffs, filenames, local paths, raw repository URLs, or file contents are ever sent. Only session metadata (timestamps, project name, session ID, branch, language/file-type metadata when available), privacy-minimized reconciliation fields, and minimal runtime diagnostics are transmitted to your QuarryFi account.
 
 ## Local Audit Log
 
