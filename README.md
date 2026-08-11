@@ -6,21 +6,18 @@ Track R&D time spent in Claude Code sessions for automated tax credit documentat
 
 ### Step 1: Add the marketplace
 
-**Claude Code CLI:**
+**Claude Code:**
 ```
-/plugin marketplace add https://github.com/quarryFi/claude-code-plugin.git
+/plugin marketplace add quarryFi/claude-code-plugin
 ```
 
-**Claude Desktop:** Click **+** next to the prompt box > **Plugins** > **Add plugin** > paste the URL above.
+This tracker is for Claude Code, where local lifecycle hooks can observe active coding sessions. Claude Desktop Chat does not run these hooks, so installing the plugin there does not provide QuarryFi time tracking.
 
 ### Step 2: Install the plugin
 
-**Claude Code CLI:**
 ```
 /plugin install quarryfi-tracker@quarryfi
 ```
-
-**Claude Desktop:** Find **Quarryfi tracker** in your plugins list and click **Install**.
 
 ### Step 3: Add your API key and projects
 
@@ -32,10 +29,12 @@ Run the configure command in any Claude Code session:
 
 This walks you through:
 1. **Profile name** — label for the company/account (e.g. "Acme Corp")
-2. **API key** — from your [QuarryFi Team dashboard](https://quarryfi.com/dashboard/team)
+2. **API key** — from **Tracking integrations and API keys** on your [QuarryFi Workspace dashboard](https://quarryfi.com/dashboard/team#tracking-plugins)
 3. **Project directories** — which local directories this key tracks
 
 Repeat to add more companies. Each profile maps one API key to one or more project directories.
+
+Tracker keys and accepted heartbeats require an active QuarryFi Core subscription. You can create and explore a Free account before upgrading, but Free accounts cannot generate new tracker keys.
 
 **Alternative:** Create `~/.quarryfi/config.json` manually (see [Config format](#config-format) below) or run the interactive setup script:
 
@@ -49,7 +48,7 @@ Use Claude Code normally. R&D time automatically appears on your [QuarryFi dashb
 
 ## Updating
 
-The Claude plugin does not auto-update just because a new commit was pushed to GitHub. Your installed marketplace clone has to refresh first.
+Third-party marketplace auto-update is off by default. In `/plugin`, open **Marketplaces**, select **quarryfi**, and enable auto-update if you want Claude Code to refresh the marketplace and installed plugin at startup. If you keep auto-update off, update manually as described below.
 
 ### From inside Claude
 
@@ -64,17 +63,16 @@ That command:
 - compares the marketplace clone and the active cached install by version and revision
 - runs the plugin update if needed
 
-Start a new Claude session after updating so the latest hooks and skills load cleanly.
+Run `/reload-plugins` after updating to load the latest hooks and skills without restarting Claude Code. Start a new session if you want a clean tracking boundary or if the current session still reports the previous version.
 
 ### From the terminal
 
 ```bash
-git -C ~/.claude/plugins/marketplaces/quarryfi fetch origin
-git -C ~/.claude/plugins/marketplaces/quarryfi reset --hard origin/main
+claude plugin marketplace update quarryfi
 claude plugin update quarryfi-tracker@quarryfi
 ```
 
-If Claude already shows the latest version number, you may only need to start a new session.
+Then run `/reload-plugins`. If Claude already shows the latest version number, the current session may only need the reload.
 
 ## Multi-Company Setup
 

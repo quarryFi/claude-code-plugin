@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# quarryFi plugin setup
+# QuarryFi plugin setup
 # Walks the user through creating multi-profile config at ~/.quarryfi/config.json.
 # Supports multiple companies/API keys with per-project routing.
 
@@ -10,7 +10,7 @@ CONFIG_FILE="$CONFIG_DIR/config.json"
 DEFAULT_API_URL="https://quarryfi.com"
 
 echo ""
-echo "  quarryFi Plugin Setup"
+echo "  QuarryFi Plugin Setup"
 echo "  ─────────────────────"
 echo ""
 
@@ -47,8 +47,9 @@ while true; do
 
   # API key
   echo ""
-  echo "  Get your API key from your QuarryFi dashboard:"
-  echo "  ${DEFAULT_API_URL}/dashboard"
+  echo "  Get a seat-assigned API key from your QuarryFi Workspace dashboard:"
+  echo "  ${DEFAULT_API_URL}/dashboard/team#tracking-plugins"
+  echo "  Tracker keys and accepted heartbeats require QuarryFi Core."
   echo ""
   read -rp "  API Key (qf_...): " api_key
 

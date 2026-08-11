@@ -1,18 +1,18 @@
 ---
-description: Force update the QuarryFi plugin to the latest version from GitHub
+description: Update the QuarryFi plugin to the latest released marketplace version
 ---
 
 # QuarryFi Update
 
-Force-refresh the latest plugin version from the marketplace and make sure the cached install Claude actually executes matches it.
+Refresh the QuarryFi marketplace using Claude Code's plugin manager and make sure the cached install Claude actually executes matches it.
 
 ## Instructions
 
 Run these commands in order using the Bash tool:
 
-1. Update the marketplace clone and capture its version + commit:
+1. Refresh the registered marketplace through Claude Code, then capture its version and commit:
 ```bash
-git -C ~/.claude/plugins/marketplaces/quarryfi fetch origin && git -C ~/.claude/plugins/marketplaces/quarryfi reset --hard origin/main
+claude plugin marketplace update quarryfi
 MARKETPLACE_VERSION=$(grep '"version"' ~/.claude/plugins/marketplaces/quarryfi/.claude-plugin/plugin.json | head -1)
 MARKETPLACE_COMMIT=$(git -C ~/.claude/plugins/marketplaces/quarryfi rev-parse HEAD)
 ```
@@ -32,12 +32,14 @@ find ~/.claude/plugins/cache/quarryfi -name "plugin.json" -path "*/.claude-plugi
 claude plugin update quarryfi-tracker@quarryfi
 ```
 
-5. Report the result to the user:
-   - If updated: "Updated QuarryFi plugin to vX.Y.Z and refreshed the active cached install. Start a new Claude session to load the new hooks."
+5. Tell the user to run `/reload-plugins` so the current session loads the refreshed plugin.
+
+6. Report the result to the user:
+   - If updated: "Updated QuarryFi plugin to vX.Y.Z and refreshed the active cached install. Run `/reload-plugins`; start a new Claude session if you want a clean tracking boundary."
    - If already current: "QuarryFi plugin is already current in both the marketplace clone and Claude's active cached install (vX.Y.Z)."
    - If update failed: show the error and suggest uninstalling/reinstalling.
 
-6. Remind the user to verify with `/quarryfi-tracker:quarryfi-status`, which should now show:
+7. Remind the user to verify with `/quarryfi-tracker:quarryfi-status`, which should now show:
    - marketplace version/commit
    - cached install version/commit
    - last local audit event timestamp
