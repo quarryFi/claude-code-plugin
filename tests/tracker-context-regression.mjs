@@ -6,10 +6,11 @@ import { join } from "node:path";
 
 const root = new URL("../", import.meta.url).pathname;
 const temp = mkdtempSync(join(tmpdir(), "quarryfi-claude-context-"));
-const project = join(temp, "private-example");
+const project = join(temp, 'private-"example');
 const configDir = join(temp, ".quarryfi");
 const binDir = join(temp, "bin");
 const captureFile = join(temp, "payload.json");
+const requestFile = join(temp, "request.txt");
 
 try {
   mkdirSync(project, { recursive: true });
@@ -30,6 +31,7 @@ try {
   }));
   const fakeCurl = join(binDir, "curl");
   writeFileSync(fakeCurl, `#!/bin/sh
+printf '%s\n' "$@" > "$QF_REQUEST_FILE"
 while [ "$#" -gt 0 ]; do
   if [ "$1" = "-d" ]; then
     shift
@@ -46,6 +48,7 @@ printf '204'
     HOME: temp,
     PATH: `${binDir}:${process.env.PATH}`,
     QF_CAPTURE_FILE: captureFile,
+    QF_REQUEST_FILE: requestFile,
   };
   const hook = join(root, "hooks/track-session.sh");
   const event = {
@@ -56,13 +59,17 @@ printf '204'
   };
   execFileSync(hook, [], { env, input: JSON.stringify(event), stdio: ["pipe", "ignore", "inherit"] });
   const payload = JSON.parse(readFileSync(captureFile, "utf8"));
+  const request = readFileSync(requestFile, "utf8");
   const heartbeat = payload.heartbeats[0];
 
   assert.match(heartbeat.head_sha, /^[a-f0-9]{40}$/);
   assert.match(heartbeat.repo_fingerprint, /^[a-f0-9]{64}$/);
   assert.equal(heartbeat.activity_kind, "test");
   assert.equal(heartbeat.changed_file_count, 0, "untracked files are deliberately excluded from the count");
-  assert.equal(payload.client.plugin_version, "1.6.2");
+  assert.equal(payload.client.plugin_version, "1.6.3");
+  assert.equal(heartbeat.project_name, 'private-"example');
+  assert.match(request, /https:\/\/quarryfi\.com\/api\/heartbeat/);
+  assert.ok(!request.includes("capture.invalid"), "marketplace builds must default-deny custom API endpoints");
   for (const forbidden of ["source_code", "diff", "prompt", "command", "file_path", "remote_url"]) {
     assert.equal(forbidden in heartbeat, false, `heartbeat must not include ${forbidden}`);
   }

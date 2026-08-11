@@ -23,7 +23,7 @@ Or create ~/.quarryfi/config.json manually:
     ]
   }
 
-Get your API key: https://quarryfi.com/dashboard/team
+Get your API key: https://quarryfi.com/dashboard/team#tracking-plugins
 MSG
   exit 0
 fi

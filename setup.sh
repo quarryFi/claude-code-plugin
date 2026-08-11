@@ -4,10 +4,15 @@
 # Supports multiple companies/API keys with per-project routing.
 
 set -euo pipefail
+umask 077
 
 CONFIG_DIR="$HOME/.quarryfi"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 DEFAULT_API_URL="https://quarryfi.com"
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr '\n\r\t' '   '
+}
 
 echo ""
 echo "  QuarryFi Plugin Setup"
@@ -51,20 +56,20 @@ while true; do
   echo "  ${DEFAULT_API_URL}/dashboard/team#tracking-plugins"
   echo "  Tracker keys and accepted heartbeats require QuarryFi Core."
   echo ""
-  read -rp "  API Key (qf_...): " api_key
+  read -srp "  API Key (input hidden): " api_key
+  echo ""
 
   # Validate key format
   if [[ ! "$api_key" =~ ^qf_[a-f0-9]{40}$ ]]; then
     echo ""
     echo "  ✗ Invalid key format. Expected: qf_ followed by 40 hex characters."
-    echo "  Example: qf_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+    echo "  Expected shape: qf_ followed by 40 lowercase hex characters."
     echo "  Skipping this profile."
     continue
   fi
 
-  # API URL
-  read -rp "  API URL [${DEFAULT_API_URL}]: " api_url
-  api_url="${api_url:-$DEFAULT_API_URL}"
+  # Marketplace releases send only to the production QuarryFi endpoint.
+  api_url="$DEFAULT_API_URL"
 
   # Project directories
   echo ""
@@ -87,7 +92,7 @@ while true; do
         else
           projects_json+=", "
         fi
-        projects_json+="\"${proj}\""
+        projects_json+="\"$(json_escape "$proj")\""
       fi
     done
   fi
@@ -99,7 +104,7 @@ while true; do
   fi
   PROFILES_JSON+="
     {
-      \"name\": \"${profile_name}\",
+      \"name\": \"$(json_escape "$profile_name")\",
       \"api_key\": \"${api_key}\",
       \"api_url\": \"${api_url}\",
       \"projects\": ${projects_json}
@@ -123,14 +128,18 @@ fi
 
 # Write config
 mkdir -p "$CONFIG_DIR"
-cat > "$CONFIG_FILE" <<EOF
+config_tmp=$(mktemp "$CONFIG_DIR/config.XXXXXX")
+trap 'rm -f "$config_tmp"' EXIT
+cat > "$config_tmp" <<EOF
 {
   "profiles": [${PROFILES_JSON}
   ]
 }
 EOF
 
-chmod 600 "$CONFIG_FILE"
+chmod 600 "$config_tmp"
+mv "$config_tmp" "$CONFIG_FILE"
+trap - EXIT
 
 echo ""
 echo "  ✓ Config written to $CONFIG_FILE (${profile_index} profile(s))"
@@ -150,6 +159,8 @@ while [ "$i" -lt "$profile_index" ]; do
   p_url="${p_url:-$DEFAULT_API_URL}"
 
   status=$(curl -s -o /dev/null -w "%{http_code}" \
+    --proto '=https' \
+    --tlsv1.2 \
     -H "Authorization: Bearer ${p_key}" \
     -H "Content-Type: application/json" \
     -d '{"heartbeats":[{"source":"claude_code","editor":"Claude Code","timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","event_type":"setup_verify"}]}' \

@@ -10,7 +10,7 @@
     {
       "name": "quarryfi-tracker",
       "source": "./",
-      "description": "Track R&D time in Claude Code for QuarryFi tax credit documentation",
+      "description": "Create privacy-minimized Claude Code activity records in QuarryFi for R&D evidence review",
       "homepage": "https://quarryfi.com",
       "repository": "https://github.com/quarryfi/claude-code-plugin",
       "license": "Apache-2.0",

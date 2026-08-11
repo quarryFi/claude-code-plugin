@@ -8,6 +8,7 @@
 # - Errors are always silenced so tracking never breaks Claude Code
 
 set -o pipefail
+umask 077
 
 CONFIG_DIR="$HOME/.quarryfi"
 CONFIG_FILE="$CONFIG_DIR/config.json"
@@ -31,10 +32,47 @@ json_string() {
   printf '%s' "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/.*:[[:space:]]*"\(.*\)"/\1/'
 }
 
-HOOK_EVENT=$(json_string "$EVENT_JSON" "hook_event_name")
-EVENT_CWD_FROM_JSON=$(json_string "$EVENT_JSON" "cwd")
-EVENT_SESSION_ID_FROM_JSON=$(json_string "$EVENT_JSON" "session_id")
-EVENT_FILE_PATH_FROM_JSON=$(json_string "$EVENT_JSON" "file_path")
+parse_event_fields() {
+  if command -v node >/dev/null 2>&1; then
+    printf '%s' "$EVENT_JSON" | node -e '
+let input="";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data",(chunk)=>input+=chunk);
+process.stdin.on("end",()=>{
+  try {
+    const event=JSON.parse(input||"{}");
+    const clean=(value)=>String(value??"").replace(/[\t\r\n]/g," ");
+    process.stdout.write([
+      clean(event.hook_event_name),
+      clean(event.cwd),
+      clean(event.session_id),
+      clean(event.file_path??event.tool_input?.file_path),
+    ].join("\t"));
+  } catch {
+    process.exitCode=1;
+  }
+});'
+    return
+  fi
+
+  printf '%s\t%s\t%s\t%s' \
+    "$(json_string "$EVENT_JSON" "hook_event_name")" \
+    "$(json_string "$EVENT_JSON" "cwd")" \
+    "$(json_string "$EVENT_JSON" "session_id")" \
+    "$(json_string "$EVENT_JSON" "file_path")"
+}
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g' | tr '\n\r\t' '   '
+}
+
+normalize_api_url() {
+  # Released plugins always send to QuarryFi. The parameter remains accepted so
+  # older config files continue to parse, but it cannot redirect credentials.
+  echo "$DEFAULT_API_URL"
+}
+
+IFS=$'\t' read -r HOOK_EVENT EVENT_CWD_FROM_JSON EVENT_SESSION_ID_FROM_JSON EVENT_FILE_PATH_FROM_JSON <<< "$(parse_event_fields)"
 
 get_plugin_version() {
   if [ -f "$PLUGIN_MANIFEST" ]; then
@@ -209,6 +247,13 @@ audit_log() {
   local language="$6"
   local duration_seconds="$7"
 
+  profile_name=$(json_escape "$profile_name")
+  status=$(json_escape "$status")
+  project_name=$(json_escape "$project_name")
+  event_type=$(json_escape "$event_type")
+  branch=$(json_escape "$branch")
+  language=$(json_escape "$language")
+
   rotate_audit_log
   {
     printf '{"timestamp":"%s","profile":"%s","project":"%s","event":"%s","branch":"%s","language":"%s","duration":%s,"status":"%s"}\n' \
@@ -363,6 +408,19 @@ build_payload() {
   local repo_fingerprint="${13}"
   local activity_kind="${14}"
   local changed_file_count="${15}"
+  event_type=$(json_escape "$event_type")
+  session_id=$(json_escape "$session_id")
+  project_name=$(json_escape "$project_name")
+  language=$(json_escape "$language")
+  file_type=$(json_escape "$file_type")
+  branch=$(json_escape "$branch")
+  plugin_version=$(json_escape "$plugin_version")
+  runtime_channel=$(json_escape "$runtime_channel")
+  install_revision=$(json_escape "$install_revision")
+  head_sha=$(json_escape "$head_sha")
+  repo_fingerprint=$(json_escape "$repo_fingerprint")
+  activity_kind=$(json_escape "$activity_kind")
+
   local head_fragment="" repo_fragment=""
   [ -n "$head_sha" ] && head_fragment=",\"head_sha\":\"${head_sha}\""
   [ -n "$repo_fingerprint" ] && repo_fragment=",\"repo_fingerprint\":\"${repo_fingerprint}\""
@@ -429,13 +487,15 @@ send_heartbeat_to_profile() {
   local duration_seconds="$9"
 
   [ -z "$api_key" ] && return
-  api_url="${api_url:-$DEFAULT_API_URL}"
+  api_url=$(normalize_api_url "$api_url")
 
   local http_code response_file
   response_file=$(mktemp "${TMPDIR:-/tmp}/quarryfi-heartbeat.XXXXXX" 2>/dev/null || true)
   [ -z "$response_file" ] && response_file="/dev/null"
   http_code=$(curl -s -o "$response_file" -w "%{http_code}" \
     --max-time 5 \
+    --proto '=https' \
+    --tlsv1.2 \
     -X POST \
     -H "Authorization: Bearer ${api_key}" \
     -H "Content-Type: application/json" \

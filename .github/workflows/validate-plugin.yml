@@ -1,0 +1,39 @@
+name: Validate Claude plugin
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install validated Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.220
+
+      - name: Validate marketplace and plugin
+        run: |
+          claude plugin validate .claude-plugin/plugin.json --strict
+          claude plugin validate .claude-plugin/marketplace.json --strict
+
+      - name: Run tracker regressions
+        run: |
+          node tests/hostname-regression.mjs
+          node tests/tracker-context-regression.mjs
+          node tests/setup-privacy-regression.mjs
+          node tests/submission-readiness.mjs

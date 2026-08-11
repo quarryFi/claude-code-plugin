@@ -1,6 +1,10 @@
 # QuarryFi Claude Code Plugin
 
-Track R&D time spent in Claude Code sessions for automated tax credit documentation.
+Create privacy-minimized activity records from Claude Code sessions for review in QuarryFi. The tracker supports R&D evidence preparation; it does not determine tax-credit eligibility or provide tax advice.
+
+## Distribution status
+
+The QuarryFi repository is the current public installation source. A submission to Anthropic's reviewed `claude-community` marketplace is being prepared; do not use community-marketplace installation commands until QuarryFi appears in Anthropic's public catalog.
 
 ## Install
 
@@ -19,7 +23,7 @@ This tracker is for Claude Code, where local lifecycle hooks can observe active 
 /plugin install quarryfi-tracker@quarryfi
 ```
 
-### Step 3: Add your API key and projects
+### Step 3: Add your API key and projects privately
 
 Run the configure command in any Claude Code session:
 
@@ -27,7 +31,7 @@ Run the configure command in any Claude Code session:
 /quarryfi-tracker:configure
 ```
 
-This walks you through:
+The command resolves the installed setup script and gives you an exact command to run in your regular terminal. The script hides API-key input so the key does not enter the Claude conversation or tool transcript. It walks you through:
 1. **Profile name** — label for the company/account (e.g. "Acme Corp")
 2. **API key** — from **Tracking integrations and API keys** on your [QuarryFi Workspace dashboard](https://quarryfi.com/dashboard/team#tracking-plugins)
 3. **Project directories** — which local directories this key tracks
@@ -36,11 +40,9 @@ Repeat to add more companies. Each profile maps one API key to one or more proje
 
 Tracker keys and accepted heartbeats require an active QuarryFi Core subscription. You can create and explore a Free account before upgrading, but Free accounts cannot generate new tracker keys.
 
-**Alternative:** Create `~/.quarryfi/config.json` manually (see [Config format](#config-format) below) or run the interactive setup script:
+**Alternative:** Create `~/.quarryfi/config.json` manually (see [Config format](#config-format) below) or run the resolved interactive setup script directly. The cache path is versioned, so use the path printed by `/quarryfi-tracker:configure` rather than copying a hard-coded path.
 
-```bash
-bash ~/.claude/plugins/cache/quarryfi/quarryfi-tracker/setup.sh
-```
+Marketplace releases send heartbeats only to `https://quarryfi.com`.
 
 ### Step 4: Start coding
 
@@ -128,7 +130,7 @@ Config file: `~/.quarryfi/config.json`
 |------------|------------------------------------------------|
 | `name`     | Display name for the profile                   |
 | `api_key`  | QuarryFi API key (`qf_...`) for this company   |
-| `api_url`  | API endpoint (defaults to `https://quarryfi.com`) |
+| `api_url`  | API endpoint; marketplace releases allow `https://quarryfi.com` only |
 | `projects` | Array of absolute directory paths to track      |
 
 ### Backward compatibility
@@ -157,6 +159,8 @@ When detected, it behaves as a single profile with no project filter — all ses
 ## Privacy
 
 No code content, conversation transcripts, prompts, commands, command output, diffs, filenames, local paths, raw repository URLs, or file contents are ever sent. Only session metadata (timestamps, project name, session ID, branch, language/file-type metadata when available), privacy-minimized reconciliation fields, and minimal runtime diagnostics are transmitted to your QuarryFi account.
+
+See [PRIVACY.md](PRIVACY.md) for the complete transmitted-field inventory, local retention behavior, network destination, and deletion controls. Security issues should be reported privately as described in [SECURITY.md](SECURITY.md).
 
 ## Local Audit Log
 
@@ -196,4 +200,4 @@ Direct plugin tracking starts when the installed hook is active. Older GitHub-on
 
 ## License
 
-Apache-2.0
+[Apache License 2.0](LICENSE)
